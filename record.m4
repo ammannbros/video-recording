@@ -4,10 +4,10 @@
 #
 # ARG_OPTIONAL_SINGLE([duration], d, [Duration of recording], [02:00:00])
 # ARG_OPTIONAL_SINGLE([output-directory], o, [Specify output directory], [.])
-# ARG_OPTIONAL_SINGLE([crf], , [crf to use for encoding], [23])
+# ARG_OPTIONAL_SINGLE([crf], , [crf to use for encoding], [18])
 # ARG_OPTIONAL_BOOLEAN([preview], , [do not show a live preview], off)
 # ARG_POSITIONAL_SINGLE([id], [the id of the video recording], )
-# ARG_HELP([Script to record from a video card])
+# ARG_HELP([Script to record from a Stk1160 based USB 2.0 video and audio capture device])
 # ARGBASH_GO
 
 # [ <-- needed because of Argbash
@@ -37,8 +37,8 @@ output="$output_directory/$title.mp4"
 log_file="$output_directory/$title.log"
 
 ffmpeg_program=$(cat <<ENDFFMPEG
-  ffmpeg -f v4l2 -standard PAL -thread_queue_size 1024 -i /dev/video0 \
-    -f alsa -thread_queue_size 1024 -i hw:2,0 \
+  ffmpeg -f v4l2 -standard PAL -thread_queue_size 2048 -i /dev/video0 \
+    -f alsa -thread_queue_size 2048 -i hw:2,0 \
     -vf "yadif=1" \
     -c:v libx264 -crf:v "$crf" -preset:v slow \
     -c:a aac -b:a 160k \
