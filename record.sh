@@ -2,7 +2,7 @@
 # shellcheck disable=SC2154
 
 #
-# ARG_OPTIONAL_SINGLE([input],[i],[Specify input],[/dev/video0])
+# ARG_OPTIONAL_SINGLE([duration],[d],[Duration of recording],[02:00:00])
 # ARG_OPTIONAL_SINGLE([output-directory],[o],[Specify output directory],[.])
 # ARG_OPTIONAL_SINGLE([crf],[],[crf to use for encoding],[23])
 # ARG_OPTIONAL_BOOLEAN([preview],[],[do not show a live preview],[off])
@@ -26,7 +26,7 @@ die()
 
 begins_with_short_option()
 {
-	local first_option all_short_options='ioh'
+	local first_option all_short_options='doh'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
@@ -34,7 +34,7 @@ begins_with_short_option()
 # THE DEFAULTS INITIALIZATION - POSITIONALS
 _positionals=()
 # THE DEFAULTS INITIALIZATION - OPTIONALS
-_arg_input="/dev/video0"
+_arg_duration="02:00:00"
 _arg_output_directory="."
 _arg_crf="23"
 _arg_preview="off"
@@ -43,9 +43,9 @@ _arg_preview="off"
 print_help()
 {
 	printf '%s\n' "Script to record from a video card"
-	printf 'Usage: %s [-i|--input <arg>] [-o|--output-directory <arg>] [--crf <arg>] [--(no-)preview] [-h|--help] <id>\n' "$0"
+	printf 'Usage: %s [-d|--duration <arg>] [-o|--output-directory <arg>] [--crf <arg>] [--(no-)preview] [-h|--help] <id>\n' "$0"
 	printf '\t%s\n' "<id>: the id of the video recording"
-	printf '\t%s\n' "-i, --input: Specify input (default: '/dev/video0')"
+	printf '\t%s\n' "-d, --duration: Duration of recording (default: '02:00:00')"
 	printf '\t%s\n' "-o, --output-directory: Specify output directory (default: '.')"
 	printf '\t%s\n' "--crf: crf to use for encoding (default: '23')"
 	printf '\t%s\n' "--preview, --no-preview: do not show a live preview (off by default)"
@@ -60,16 +60,16 @@ parse_commandline()
 	do
 		_key="$1"
 		case "$_key" in
-			-i|--input)
+			-d|--duration)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_input="$2"
+				_arg_duration="$2"
 				shift
 				;;
-			--input=*)
-				_arg_input="${_key##--input=}"
+			--duration=*)
+				_arg_duration="${_key##--duration=}"
 				;;
-			-i*)
-				_arg_input="${_key##-i}"
+			-d*)
+				_arg_duration="${_key##-d}"
 				;;
 			-o|--output-directory)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -170,11 +170,13 @@ output="$output_directory/$title.mp4"
 log_file="$output_directory/$title.log"
 
 ffmpeg_program=$(cat <<ENDFFMPEG
-  ffmpeg -i "$input" \
+  ffmpeg -f v4l2 -standard PAL -thread_queue_size 1024 -i /dev/video0 \
+    -f alsa -thread_queue_size 1024 -i hw:2,0 \
     -vf "yadif=1" \
     -c:v libx264 -crf:v "$crf" -preset:v slow \
     -c:a aac -b:a 160k \
     -movflags +faststart -r 25 \
+    -t $_arg_duration \
     -metadata author="Familie Ammann" \
     -metadata title="$title" \
 

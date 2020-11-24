@@ -2,7 +2,7 @@
 # shellcheck disable=SC2154
 
 #
-# ARG_OPTIONAL_SINGLE([input], i, [Specify input], [/dev/video0])
+# ARG_OPTIONAL_SINGLE([duration], d, [Duration of recording], [02:00:00])
 # ARG_OPTIONAL_SINGLE([output-directory], o, [Specify output directory], [.])
 # ARG_OPTIONAL_SINGLE([crf], , [crf to use for encoding], [23])
 # ARG_OPTIONAL_BOOLEAN([preview], , [do not show a live preview], off)
@@ -37,11 +37,13 @@ output="$output_directory/$title.mp4"
 log_file="$output_directory/$title.log"
 
 ffmpeg_program=$(cat <<ENDFFMPEG
-  ffmpeg -i "$input" \
+  ffmpeg -f v4l2 -standard PAL -thread_queue_size 1024 -i /dev/video0 \
+    -f alsa -thread_queue_size 1024 -i hw:2,0 \
     -vf "yadif=1" \
     -c:v libx264 -crf:v "$crf" -preset:v slow \
     -c:a aac -b:a 160k \
     -movflags +faststart -r 25 \
+    -t $_arg_duration \
     -metadata author="Familie Ammann" \
     -metadata title="$title" \
 
