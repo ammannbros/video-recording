@@ -43,8 +43,8 @@ ffmpeg_program="ffmpeg"
 if [ "$input" = "video_card" ]
 then
   ffmpeg_program="$ffmpeg_program \
-    -f v4l2 -standard PAL -thread_queue_size 2048 -i /dev/video0 \
-    -f alsa -thread_queue_size 2048 -i hw:2,0"
+    -f v4l2 -standard PAL -thread_queue_size 2048 -t $_arg_duration -i /dev/video0 \
+    -f alsa -thread_queue_size 2048 -t $_arg_duration -i hw:2,0"
 else
     ffmpeg_program="$ffmpeg_program -i $input"
 fi
@@ -54,7 +54,6 @@ ffmpeg_program="$ffmpeg_program$(cat <<ENDFFMPEG
     -c:v libx264 -crf:v "$crf" -preset:v slow -pix_fmt yuv420p \
     -c:a aac -b:a 192k \
     -movflags +faststart -r 25 \
-    -t $_arg_duration \
     -metadata author="Familie Ammann" \
     -metadata title="$title" \
     
