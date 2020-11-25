@@ -3,6 +3,7 @@
 
 #
 # ARG_OPTIONAL_SINGLE([duration], d, [Duration of recording], [02:00:00])
+# ARG_OPTIONAL_SINGLE([input], i, [Path to input file or "video_card"], [video_card])
 # ARG_OPTIONAL_SINGLE([output-directory], o, [Specify output directory], [.])
 # ARG_OPTIONAL_SINGLE([crf], , [crf to use for encoding], [18])
 # ARG_OPTIONAL_BOOLEAN([preview], , [do not show a live preview], off)
@@ -35,10 +36,20 @@ fi
 
 output="$output_directory/$title.mp4"
 log_file="$output_directory/$title.log"
+input="$_arg_input"
 
-ffmpeg_program=$(cat <<ENDFFMPEG
-  ffmpeg -f v4l2 -standard PAL -thread_queue_size 2048 -i /dev/video0 \
-    -f alsa -thread_queue_size 2048 -i hw:2,0 \
+ffmpeg_program="ffmpeg"
+
+if [ "$input" = "video_card" ]
+then
+  ffmpeg_program="$ffmpeg_program \
+    -f v4l2 -standard PAL -thread_queue_size 2048 -i /dev/video0 \
+    -f alsa -thread_queue_size 2048 -i hw:2,0"
+else
+    ffmpeg_program="$ffmpeg_program -i $input"
+fi
+
+ffmpeg_program="$ffmpeg_program$(cat <<ENDFFMPEG
     -vf "yadif=1" \
     -c:v libx264 -crf:v "$crf" -preset:v slow -pix_fmt yuv420p \
     -c:a aac -b:a 192k \
@@ -46,20 +57,18 @@ ffmpeg_program=$(cat <<ENDFFMPEG
     -t $_arg_duration \
     -metadata author="Familie Ammann" \
     -metadata title="$title" \
-
 ENDFFMPEG
-)
+)"
   
-echo "$_arg_preview"
-  
+
 if [ "$_arg_preview" = on ] 
 then
-  ffmpeg_program="$ffmpeg_program $output -vf format=yuv420p -f sdl Preview |& tee $log_file"
+  ffmpeg_program="$ffmpeg_program $output -vf format=yuv420p -f sdl Preview"
 else
-  ffmpeg_program="$ffmpeg_program $output |& tee $log_file"
+  ffmpeg_program="$ffmpeg_program $output"
 fi
 
-echo "$ffmpeg_program"
+echo "FFMPEG command: $ffmpeg_program"
 eval "$ffmpeg_program |& tee $log_file"
 
 echo "Video written to $output"

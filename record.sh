@@ -3,6 +3,7 @@
 
 #
 # ARG_OPTIONAL_SINGLE([duration],[d],[Duration of recording],[02:00:00])
+# ARG_OPTIONAL_SINGLE([input],[i],[Path to input file or "video_card"],[video_card])
 # ARG_OPTIONAL_SINGLE([output-directory],[o],[Specify output directory],[.])
 # ARG_OPTIONAL_SINGLE([crf],[],[crf to use for encoding],[18])
 # ARG_OPTIONAL_BOOLEAN([preview],[],[do not show a live preview],[off])
@@ -26,7 +27,7 @@ die()
 
 begins_with_short_option()
 {
-	local first_option all_short_options='doh'
+	local first_option all_short_options='dioh'
 	first_option="${1:0:1}"
 	test "$all_short_options" = "${all_short_options/$first_option/}" && return 1 || return 0
 }
@@ -35,6 +36,7 @@ begins_with_short_option()
 _positionals=()
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_duration="02:00:00"
+_arg_input="video_card"
 _arg_output_directory="."
 _arg_crf="18"
 _arg_preview="off"
@@ -43,9 +45,10 @@ _arg_preview="off"
 print_help()
 {
 	printf '%s\n' "Script to record from a Stk1160 based USB 2.0 video and audio capture device"
-	printf 'Usage: %s [-d|--duration <arg>] [-o|--output-directory <arg>] [--crf <arg>] [--(no-)preview] [-h|--help] <id>\n' "$0"
+	printf 'Usage: %s [-d|--duration <arg>] [-i|--input <arg>] [-o|--output-directory <arg>] [--crf <arg>] [--(no-)preview] [-h|--help] <id>\n' "$0"
 	printf '\t%s\n' "<id>: the id of the video recording"
 	printf '\t%s\n' "-d, --duration: Duration of recording (default: '02:00:00')"
+	printf '\t%s\n' "-i, --input: Path to input file or \"video_card\" (default: 'video_card')"
 	printf '\t%s\n' "-o, --output-directory: Specify output directory (default: '.')"
 	printf '\t%s\n' "--crf: crf to use for encoding (default: '18')"
 	printf '\t%s\n' "--preview, --no-preview: do not show a live preview (off by default)"
@@ -70,6 +73,17 @@ parse_commandline()
 				;;
 			-d*)
 				_arg_duration="${_key##-d}"
+				;;
+			-i|--input)
+				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
+				_arg_input="$2"
+				shift
+				;;
+			--input=*)
+				_arg_input="${_key##--input=}"
+				;;
+			-i*)
+				_arg_input="${_key##-i}"
 				;;
 			-o|--output-directory)
 				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
@@ -168,10 +182,20 @@ fi
 
 output="$output_directory/$title.mp4"
 log_file="$output_directory/$title.log"
+input="$_arg_input"
 
-ffmpeg_program=$(cat <<ENDFFMPEG
-  ffmpeg -f v4l2 -standard PAL -thread_queue_size 2048 -i /dev/video0 \
-    -f alsa -thread_queue_size 2048 -i hw:2,0 \
+ffmpeg_program="ffmpeg"
+
+if [ "$input" = "video_card" ]
+then
+  ffmpeg_program="$ffmpeg_program \
+    -f v4l2 -standard PAL -thread_queue_size 2048 -i /dev/video0 \
+    -f alsa -thread_queue_size 2048 -i hw:2,0"
+else
+    ffmpeg_program="$ffmpeg_program -i $input"
+fi
+
+ffmpeg_program="$ffmpeg_program$(cat <<ENDFFMPEG
     -vf "yadif=1" \
     -c:v libx264 -crf:v "$crf" -preset:v slow -pix_fmt yuv420p \
     -c:a aac -b:a 192k \
@@ -179,20 +203,18 @@ ffmpeg_program=$(cat <<ENDFFMPEG
     -t $_arg_duration \
     -metadata author="Familie Ammann" \
     -metadata title="$title" \
-
 ENDFFMPEG
-)
+)"
 
-echo "$_arg_preview"
 
 if [ "$_arg_preview" = on ]
 then
-  ffmpeg_program="$ffmpeg_program $output -vf format=yuv420p -f sdl Preview |& tee $log_file"
+  ffmpeg_program="$ffmpeg_program $output -vf format=yuv420p -f sdl Preview"
 else
-  ffmpeg_program="$ffmpeg_program $output |& tee $log_file"
+  ffmpeg_program="$ffmpeg_program $output"
 fi
 
-echo "$ffmpeg_program"
+echo "FFMPEG command: $ffmpeg_program"
 eval "$ffmpeg_program |& tee $log_file"
 
 echo "Video written to $output"
