@@ -203,6 +203,7 @@ ffmpeg_program="$ffmpeg_program$(cat <<ENDFFMPEG
     -t $_arg_duration \
     -metadata author="Familie Ammann" \
     -metadata title="$title" \
+
 ENDFFMPEG
 )"
 
