@@ -30,10 +30,10 @@ output="$_arg_output_directory/$filename$extension"
 if [ "$_arg_start" = 00:00:00 ] 
 then
     #No start trim was specified -> trim end 
-    ffmpeg -i $_arg_input -to $_arg_end -c:v copy -c:a copy $output
+    ffmpeg -i $_arg_input -to $_arg_end -c:v copy -c:a copy -avoid_negative_ts make_zero $output
 else
     #Start trim was specified -> trim start and end 
-    ffmpeg -i $_arg_input -ss $_arg_start -to $_arg_end -c:v copy -c:a copy $output
+    ffmpeg -i $_arg_input -ss $_arg_start -to $_arg_end -c:v copy -c:a copy -avoid_negative_ts make_zero $output
 fi
 
 echo 
