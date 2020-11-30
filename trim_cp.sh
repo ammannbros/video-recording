@@ -4,7 +4,6 @@
 #
 # ARG_OPTIONAL_SINGLE([output-directory],[o],[Specify output directory],[.])
 # ARG_OPTIONAL_SINGLE([start],[s],[specify the start],[00:00:00])
-# ARG_OPTIONAL_SINGLE([crf],[],[crf to use for encoding],[18])
 # ARG_POSITIONAL_SINGLE([input],[path to input video])
 # ARG_POSITIONAL_SINGLE([end],[target end timestemp of the video])
 # ARG_HELP([ffmpeg wrapper to trim a video to a desired timestemp without recompressing (simple copy)\n  Example: ./trim.sh ./ollech/Hi8_kinder_ollech_1_2020-11-29_12-07-20_crf-18.mp4 00:37:44 -s 00:15:26 -o ./ollech_trim])
@@ -36,19 +35,17 @@ _positionals=()
 # THE DEFAULTS INITIALIZATION - OPTIONALS
 _arg_output_directory="."
 _arg_start="00:00:00"
-_arg_crf="18"
 
 
 print_help()
 {
 	printf '%s\n' "ffmpeg wrapper to trim a video to a desired timestemp without recompressing (simple copy)
   Example: ./trim.sh ./ollech/Hi8_kinder_ollech_1_2020-11-29_12-07-20_crf-18.mp4 00:37:44 -s 00:15:26 -o ./ollech_trim"
-	printf 'Usage: %s [-o|--output-directory <arg>] [-s|--start <arg>] [--crf <arg>] [-h|--help] <input> <end>\n' "$0"
+	printf 'Usage: %s [-o|--output-directory <arg>] [-s|--start <arg>] [-h|--help] <input> <end>\n' "$0"
 	printf '\t%s\n' "<input>: path to input video"
 	printf '\t%s\n' "<end>: target end timestemp of the video"
 	printf '\t%s\n' "-o, --output-directory: Specify output directory (default: '.')"
 	printf '\t%s\n' "-s, --start: specify the start (default: '00:00:00')"
-	printf '\t%s\n' "--crf: crf to use for encoding (default: '18')"
 	printf '\t%s\n' "-h, --help: Prints help"
 }
 
@@ -81,14 +78,6 @@ parse_commandline()
 				;;
 			-s*)
 				_arg_start="${_key##-s}"
-				;;
-			--crf)
-				test $# -lt 2 && die "Missing value for the optional argument '$_key'." 1
-				_arg_crf="$2"
-				shift
-				;;
-			--crf=*)
-				_arg_crf="${_key##--crf=}"
 				;;
 			-h|--help)
 				print_help
@@ -160,21 +149,10 @@ output="$_arg_output_directory/$filename$extension"
 if [ "$_arg_start" = 00:00:00 ]
 then
     #No start trim was specified -> trim end
-    ffmpeg -i $_arg_input -to $_arg_end \
-        -c:v libx264 -crf:v $_arg_crf -preset:v slow -pix_fmt yuv420p \
-        -c:a aac -b:a 192k \
-        -movflags +faststart -r 25 \
-        -metadata author="Familie Ammann" \
-        -metadata title="$title" $output
+    ffmpeg -i $_arg_input -to $_arg_end -c:v copy -c:a copy $output
 else
     #Start trim was specified -> trim start and end
-    ffmpeg -i $_arg_input -ss $_arg_start -to $_arg_end \
-        -c:v libx264 -crf:v $_arg_crf -preset:v slow -pix_fmt yuv420p \
-        -c:a aac -b:a 192k \
-        -movflags +faststart -r 25 \
-        -metadata author="Familie Ammann" \
-        -metadata title="$title" \
-        $output
+    ffmpeg -ss $_arg_start -i $_arg_input -to $_arg_end -c:v copy -c:a copy $output
 fi
 
 echo
