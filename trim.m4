@@ -2,8 +2,8 @@
 # shellcheck disable=SC2154
 
 #
-# ARG_OPTIONAL_SINGLE([output-directory], o, [Specifys the output directory], [.])
-# ARG_OPTIONAL_SINGLE([output-filename], f, [Specifys a filename], [.])
+# ARG_OPTIONAL_SINGLE([output_directory], o, [Specifys the output directory], [.])
+# ARG_OPTIONAL_SINGLE([output_filename], f, [Specifys a filename], [.])
 # ARG_OPTIONAL_SINGLE([start], s, [specify the start], [00:00:00])
 # ARG_OPTIONAL_SINGLE([crf], , [crf to use for encoding], [18])
 # ARG_POSITIONAL_SINGLE([input], [path to input video])
@@ -20,10 +20,11 @@ then
   exit 1
 fi
 
-if [ -z "$_arg_output_filename" ] 
+if [[ -z "$_arg_output_filename" ]] 
+then
     #Get filename withou extension from input filename
     filename="$(basename $_arg_input | sed 's/\(.*\)\..*/\1/')_trim"
-then
+else
     #Use specified output filename
     filename="$_arg_output_filename"
 fi

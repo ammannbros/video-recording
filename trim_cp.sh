@@ -151,13 +151,16 @@ then
   exit 1
 fi
 
-if [ -z "$_arg_output_filename" ]
+if [[ -z "$_arg_output_filename" ]]
+then
     #Get filename withou extension from input filename
     filename="$(basename $_arg_input | sed 's/\(.*\)\..*/\1/')_trim"
-then
+else
     #Use specified output filename
     filename="$_arg_output_filename"
 fi
+echo filename:
+echo $filename
 
 #Get filename extension
 extension=".${_arg_input##*.}"
