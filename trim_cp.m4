@@ -2,11 +2,12 @@
 # shellcheck disable=SC2154
 
 #
-# ARG_OPTIONAL_SINGLE([output-directory], o, [Specify output directory], [.])
+# ARG_OPTIONAL_SINGLE([output_directory], o, [Specify output directory], [.])
+# ARG_OPTIONAL_SINGLE([output_filename], f, [Specifys a filename])
 # ARG_OPTIONAL_SINGLE([start], s, [specify the start], [00:00:00])
 # ARG_POSITIONAL_SINGLE([input], [path to input video])
 # ARG_POSITIONAL_SINGLE([end], [target end timestemp of the video])
-# ARG_HELP([ffmpeg wrapper to trim a video to a desired timestemp without recompressing (simple copy)\n  Example: ./trim.sh ./ollech/Hi8_kinder_ollech_1_2020-11-29_12-07-20_crf-18.mp4 00:37:44 -s 00:15:26 -o ./ollech_trim])
+# ARG_HELP([ffmpeg wrapper to trim a video to a desired timestemp without recompressing (simple copy)\n])
 # ARGBASH_GO
 
 # [ <-- needed because of Argbash
@@ -18,8 +19,13 @@ then
   exit 1
 fi
 
-#Get filename withou extension
-filename="$(basename $_arg_input | sed 's/\(.*\)\..*/\1/')_trim"
+if [ -z "$_arg_output_filename" ] 
+    #Get filename withou extension from input filename
+    filename="$(basename $_arg_input | sed 's/\(.*\)\..*/\1/')_trim"
+then
+    #Use specified output filename
+    filename="$_arg_output_filename"
+fi
 
 #Get filename extension
 extension=".${_arg_input##*.}"
